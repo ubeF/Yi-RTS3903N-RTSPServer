@@ -16,6 +16,8 @@
 
 #include <stdio.h>
 
+#include <stdlib.h>
+#include <errno.h>
 #include <unistd.h>
 #include <string.h>
 #include <fcntl.h>
@@ -39,6 +41,59 @@ int isp = -1;
 static int g_exit;
 int night = 3;
 int arg_amount = 0;
+
+void initFirmware() {
+    const char* firmwareDest = "/tmp/isp.fw";
+    const char* defaultFirmware = "/ipc/sensors_fw/default.fw";
+    const char* cameraSys = "/sys/devices/platform/rts_soc_camera/sensor";
+    const char* firmwareDir = "/ipc/sensors_fw/";
+
+    printf("Load default Firmware\n");
+
+    remove(firmwareDest);
+    symlink(defaultFirmware, firmwareDest);
+    system("echo 2 > /sys/devices/platform/rts_soc_camera/loadfw");
+    remove(firmwareDest);
+
+    printf("Get camera Info\n");
+
+    FILE* cameraHandle = fopen(cameraSys, "rb");
+    if (cameraHandle == 0) {
+        perror("Failed to open");
+        exit(1);
+    }
+    char cameraInfo [48];
+    int returnCode = fread(cameraInfo, 1, 16, cameraHandle);
+    fclose(cameraHandle);
+    if (returnCode > 1) {
+        printf("Read %s\n", cameraInfo);
+    } else {
+        perror("Failed to read");
+        exit(1);
+    }
+
+    printf("Format camera info\n");
+
+    char* newlinePos = strchr(cameraInfo, '\n');
+    if (newlinePos != 0) {
+        *newlinePos = 0;
+    }
+
+    printf("Build firmware path\n");
+
+    char firmwarePath[64] = {0}; // Initialize with zeros
+    strncpy(firmwarePath, firmwareDir, sizeof(firmwarePath) - 1); // Ensure null termination
+    // Append cameraInfo to firmwarePath
+    strncat(firmwarePath, cameraInfo, sizeof(firmwarePath) - strlen(firmwarePath) - 1);
+    // Append ".fw" to firmwarePath
+    strncat(firmwarePath, ".fw", sizeof(firmwarePath) - strlen(firmwarePath) - 1);
+    printf("Built firmware path: %s\n", firmwarePath);
+
+    printf("Load Firmware\n");
+
+    symlink(firmwarePath, firmwareDest);
+    system("echo 1 > /sys/devices/platform/rts_soc_camera/loadfw");
+}
 
 static void Termination(int sign) {
     g_exit = 1;
@@ -379,6 +434,8 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "rts_av_init fail\n");
         return ret;
     }
+
+    initFirmware();
     start_stream();
 
     rts_av_release();
