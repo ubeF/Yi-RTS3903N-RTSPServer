@@ -118,7 +118,7 @@ int manage_modes(enum enum_rts_video_ctrl_id type, int value) {
     int ret;
     ret = rts_av_get_isp_ctrl(type, &ctrl);
     if (ret) {
-        RTS_ERR("Failed to change GPIO: ret = %d for %d\n", ret, type);
+        fprintf(stderr, "Failed to change GPIO: ret = %d for %d\n", ret, type);
         return 0;
     }
     int map_value = get_valid_value(type, value, &ctrl);
@@ -128,7 +128,7 @@ int manage_modes(enum enum_rts_video_ctrl_id type, int value) {
     ctrl.current_value = value;
     ret = rts_av_set_isp_ctrl(type, &ctrl);
     if (ret) {
-        RTS_ERR("Failed to set new value\n", ret);
+        fprintf(stderr, "Failed to set new value\n", ret);
         return 0;
     }
 
@@ -172,18 +172,18 @@ static void day_mode_or_night_mode() {
         }
     }
 
-    // RTS_INFO("Mode debug day=%d night=%d adc=%d night=%d", detected_night, detected_day, adc_value, night);
+    // fprintf(stderr, "Mode debug day=%d night=%d adc=%d night=%d", detected_night, detected_day, adc_value, night);
     // We have detected darkness
     // We store the state of the camera's current nightmode in night
     if (night != 1 && detected_night == 1) {
         manage_modes(RTS_VIDEO_CTRL_ID_GRAY_MODE, 1);
         manage_modes(RTS_VIDEO_CTRL_ID_IR_MODE, 2);
-        // RTS_INFO("Night mode\n");
+        // fprintf(stderr, "Night mode\n");
         manage_ir_cut(1);
         night = 1;
     } else if (night != 0 && detected_day == 1) {
         // We have detected light
-        // RTS_INFO("Day mode\n");
+        // fprintf(stderr, "Day mode\n");
         manage_modes(RTS_VIDEO_CTRL_ID_GRAY_MODE, 0);
         manage_modes(RTS_VIDEO_CTRL_ID_IR_MODE, 0);
         manage_ir_cut(0);
@@ -193,7 +193,7 @@ static void day_mode_or_night_mode() {
 
 
 static void isp_ctrl() {
-    RTS_INFO("Control thread started\n");
+    fprintf(stderr, "Control thread started\n");
     // Wait for any other apps controlling the IR cut to end
     sleep(30);
     while (!g_exit) {
@@ -202,7 +202,7 @@ static void isp_ctrl() {
 
     }
 
-    RTS_INFO("quit isp control thread\n");
+    fprintf(stderr, "quit isp control thread\n");
 }
 
 int start_stream() {
@@ -224,11 +224,11 @@ int start_stream() {
     isp = rts_av_create_isp_chn(&isp_attr);
 
     if (isp < 0) {
-        RTS_ERR("fail to create isp chn, ret = %d\n", isp);
+        fprintf(stderr, "fail to create isp chn, ret = %d\n", isp);
         ret = RTS_RETURN(RTS_E_OPEN_FAIL);
         goto exit;
     }
-    RTS_INFO("isp chn : %d\n", isp);
+    fprintf(stderr, "isp chn : %d\n", isp);
 
     profile.fmt = RTS_V_FMT_YUV420SEMIPLANAR;
     profile.video.width = 1920;
@@ -240,7 +240,7 @@ int start_stream() {
 
     ret = rts_av_set_profile(isp, &profile);
     if (ret) {
-        RTS_ERR("set isp profile fail, ret = %d\n", ret);
+        fprintf(stderr, "set isp profile fail, ret = %d\n", ret);
         goto exit;
     }
     h264_attr.level = H264_LEVEL_4;
@@ -251,15 +251,15 @@ int start_stream() {
     h264_attr.rotation = RTS_AV_ROTATION_0;
     h264 = rts_av_create_h264_chn(&h264_attr);
     if (h264 < 0) {
-        RTS_ERR("fail to create h264 chn, ret = %d\n", h264);
+        fprintf(stderr, "fail to create h264 chn, ret = %d\n", h264);
         ret = RTS_RETURN(RTS_E_OPEN_FAIL);
         goto exit;
     }
-    RTS_INFO("h264 chn : %d\n", h264);
+    fprintf(stderr, "h264 chn : %d\n", h264);
 
     ret = rts_av_bind(isp, h264);
     if (ret) {
-        RTS_ERR("fail to bind isp and h264, ret %d\n", ret);
+        fprintf(stderr, "fail to bind isp and h264, ret %d\n", ret);
         goto exit;
     }
     rts_av_enable_chn(isp);
@@ -281,14 +281,14 @@ int start_stream() {
     FILE *fd;
     unlink(FIFO_NAME_HIGH);
     if (mkfifo(FIFO_NAME_HIGH, 0755) < 0) {
-        RTS_INFO("Failed to create fifo file\n");
+        fprintf(stderr, "Failed to create fifo file\n");
         goto exit;
     }
 
 
     fd = fopen(FIFO_NAME_HIGH, "wb");
     if (!fd) {
-        RTS_INFO("Failed to open fifo file\n");
+        fprintf(stderr, "Failed to open fifo file\n");
         goto exit;
     }
 
@@ -299,7 +299,7 @@ int start_stream() {
     int vfd;
     vfd = rts_isp_v4l2_open(isp_attr.isp_id);
     if (vfd > 0) {
-        RTS_INFO("Opened the V4L2 fd\n");
+        fprintf(stderr, "Opened the V4L2 fd\n");
 
         rts_isp_v4l2_close(vfd);
     }
@@ -321,12 +321,12 @@ int start_stream() {
             if (buffer->flags & RTSTREAM_PKT_FLAG_KEY) {
                 fprintf(stdout, "Frame %d\n", number);
             }
-            //RTS_INFO("Address %p", buffer->vm_addr);
-            //RTS_INFO("Bytes Used %d", buffer->bytesused);
-            //RTS_INFO("Physical Address %p", buffer->phy_addr);
-            //RTS_INFO("Length Used %d", buffer->length);
-            //RTS_INFO("Buffer Header Address %p", &buffer);
-            //RTS_INFO("H264 Control Address %p", &h264);
+            //fprintf(stderr, "Address %p", buffer->vm_addr);
+            //fprintf(stderr, "Bytes Used %d", buffer->bytesused);
+            //fprintf(stderr, "Physical Address %p", buffer->phy_addr);
+            //fprintf(stderr, "Length Used %d", buffer->length);
+            //fprintf(stderr, "Buffer Header Address %p", &buffer);
+            //fprintf(stderr, "H264 Control Address %p", &h264);
             if (fwrite(buffer->vm_addr, 1, buffer->bytesused, fd) != buffer->bytesused) {
                 fprintf(stdout, "Possible SIGPIPE break from stream disconnection, skipping flush\n");
             } else {
@@ -343,8 +343,8 @@ int start_stream() {
 
     RTS_SAFE_RELEASE(pfile, fclose);
 
-    RTS_INFO("\n");
-    RTS_INFO("get %d frames\n", number);
+    fprintf(stderr, "\n");
+    fprintf(stderr, "get %d frames\n", number);
     exit:
 
     RTS_SAFE_RELEASE(tpool, rts_pthreadpool_destroy);
@@ -376,7 +376,7 @@ int main(int argc, char *argv[]) {
 
     ret = rts_av_init();
     if (ret) {
-        RTS_ERR("rts_av_init fail\n");
+        fprintf(stderr, "rts_av_init fail\n");
         return ret;
     }
     start_stream();
