@@ -93,6 +93,7 @@ void initFirmware() {
 
     symlink(firmwarePath, firmwareDest);
     system("echo 1 > /sys/devices/platform/rts_soc_camera/loadfw");
+    sleep(30);
 }
 
 static void Termination(int sign) {
@@ -286,12 +287,12 @@ int start_stream() {
     fprintf(stderr, "isp chn : %d\n", isp);
 
     profile.fmt = RTS_V_FMT_YUV420SEMIPLANAR;
-    profile.video.width = 1920;
-    profile.video.height = 1080;
+    profile.video.width = 1280;
+    profile.video.height = 720;
 //    profile.video.width = 1280;
 //    profile.video.height = 720;
     profile.video.numerator = 1;
-    profile.video.denominator = 20;
+    profile.video.denominator = 15;
 
     ret = rts_av_set_profile(isp, &profile);
     if (ret) {
