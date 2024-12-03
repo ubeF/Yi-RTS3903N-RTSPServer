@@ -38,7 +38,7 @@
 //#define GPIO_CATHODE 21
 
 int isp = -1;
-static int g_exit;
+static int g_exit = 0;
 int night = 3;
 int arg_amount = 0;
 
