@@ -325,14 +325,14 @@ int start_stream() {
 //    manage_modes(RTS_VIDEO_CTRL_ID_FOCUS, 100);
     manage_modes(RTS_VIDEO_CTRL_ID_DETAIL_ENHANCEMENT, 100);
     manage_modes(RTS_VIDEO_CTRL_ID_3DNR, -1);
-    // tpool = rts_pthreadpool_init(1);
-    // if (!tpool) {
-    //     ret = -1;
-    //     goto exit;
-    // }
+    tpool = rts_pthreadpool_init(1);
+    if (!tpool) {
+        ret = -1;
+        goto exit;
+    }
 
-    // printf("rts_pthreadpool_add_task\n")
-    // rts_pthreadpool_add_task(tpool, isp_ctrl, NULL, NULL);
+    printf("rts_pthreadpool_add_task\n")
+    rts_pthreadpool_add_task(tpool, isp_ctrl, NULL, NULL);
     fprintf(stderr, "set_video_CVBR_mode\n");
     set_video_CVBR_mode(h264);
     fprintf(stderr, "rts_av_start_recv\n");
@@ -371,8 +371,9 @@ int start_stream() {
     while (!g_exit) {
         struct rts_av_buffer *buffer = NULL;
 
-        if (rts_av_poll(h264)) {
-            fprintf(stderr, "Nothing to poll!\n");
+        int poll_result = rts_av_poll(h264);
+        if (poll_result) {
+            fprintf(stderr, "Poll failed: %d!\n", poll_result);
             usleep(1000);
             continue;
         } 
