@@ -333,9 +333,9 @@ int start_stream() {
 
     // printf("rts_pthreadpool_add_task\n")
     // rts_pthreadpool_add_task(tpool, isp_ctrl, NULL, NULL);
-    printf("set_video_CVBR_mode\n");
+    fprintf(stderr, "set_video_CVBR_mode\n");
     set_video_CVBR_mode(h264);
-    printf("rts_av_start_recv\n");
+    fprintf(stderr, "rts_av_start_recv\n");
     rts_av_start_recv(h264);
 
     FILE *fd;
@@ -356,7 +356,7 @@ int start_stream() {
 
 
     // Try load the V4L device
-    printf("Try load the V4L device\n");
+    fprintf(stderr, "Try load the V4L device\n");
     int vfd;
     vfd = rts_isp_v4l2_open(isp_attr.isp_id);
     if (vfd > 0) {
@@ -367,19 +367,24 @@ int start_stream() {
     // Toggle IR Cut at startup (disabled as of V03 as dispatch binary does this auto)
     manage_ir_cut(1); // Always start as if it was day time
 
-    printf("Enter main Loop\n");
+    fprintf(stderr, "Enter main Loop\n");
     while (!g_exit) {
-
         struct rts_av_buffer *buffer = NULL;
 
         if (rts_av_poll(h264)) {
+            fprintf(stderr, "Nothing to poll!\n");
             usleep(1000);
             continue;
-        }
+        } 
+
         if (rts_av_recv(h264, &buffer)) {
+            fprintf(stderr, "Read empty!\n");
             usleep(1000);
             continue;
         }
+
+        fprintf(stderr, "Got Buffer!\n");
+
         if (buffer) {
             if (buffer->flags & RTSTREAM_PKT_FLAG_KEY) {
                 fprintf(stdout, "Frame %d\n", number);
@@ -398,6 +403,8 @@ int start_stream() {
             number++;
             rts_av_put_buffer(buffer);
             buffer = NULL;
+        } else {
+            fprintf(stderr, "Buffer empty!\n");
         }
     }
 
