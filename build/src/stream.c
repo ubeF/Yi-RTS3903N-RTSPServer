@@ -325,13 +325,17 @@ int start_stream() {
 //    manage_modes(RTS_VIDEO_CTRL_ID_FOCUS, 100);
     manage_modes(RTS_VIDEO_CTRL_ID_DETAIL_ENHANCEMENT, 100);
     manage_modes(RTS_VIDEO_CTRL_ID_3DNR, -1);
-    tpool = rts_pthreadpool_init(1);
-    if (!tpool) {
-        ret = -1;
-        goto exit;
-    }
-    rts_pthreadpool_add_task(tpool, isp_ctrl, NULL, NULL);
+    // tpool = rts_pthreadpool_init(1);
+    // if (!tpool) {
+    //     ret = -1;
+    //     goto exit;
+    // }
+
+    // printf("rts_pthreadpool_add_task\n")
+    // rts_pthreadpool_add_task(tpool, isp_ctrl, NULL, NULL);
+    printf("set_video_CVBR_mode\n");
     set_video_CVBR_mode(h264);
+    printf("rts_av_start_recv\n");
     rts_av_start_recv(h264);
 
     FILE *fd;
@@ -352,6 +356,7 @@ int start_stream() {
 
 
     // Try load the V4L device
+    printf("Try load the V4L device\n");
     int vfd;
     vfd = rts_isp_v4l2_open(isp_attr.isp_id);
     if (vfd > 0) {
@@ -361,6 +366,8 @@ int start_stream() {
     }
     // Toggle IR Cut at startup (disabled as of V03 as dispatch binary does this auto)
     manage_ir_cut(1); // Always start as if it was day time
+
+    printf("Enter main Loop\n");
     while (!g_exit) {
 
         struct rts_av_buffer *buffer = NULL;
